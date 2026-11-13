@@ -95,6 +95,19 @@
                 
                         <tbody>
                             
+                            {% if lista %}
+                                {% for row in lista %}
+                                    <tr>
+                                        <td>{{ row.pacotesRecebidos["data_hora_registro"] }}</td>
+                                        <td>{{ row.resultadosProcessados["valor"] }}%</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="2">Nenhum resultado encontrado.</td>
+                                </tr>
+                            {% endif %}
+
                         </tbody>
                 
                     </table>
@@ -105,6 +118,11 @@
 
         </section>
 
+        <div id="dadosGrafico"
+            data-medias='{{ medias | tojson | forceescape }}'
+            data-unidade="{{ unidade }}">
+        </div>
+
     </main>
 
     <script
@@ -112,8 +130,9 @@
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
         crossorigin="anonymous">
     </script>
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="{{ url_for('static', filename='grafico.js') }}"></script>
 
 </body>
 </html>

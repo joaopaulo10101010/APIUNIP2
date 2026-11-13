@@ -15,15 +15,37 @@ sensor = SensorRepositorio()
 @app.route("/lista/<string:componente>", methods=["GET"])
 def lista(componente):
 
-    if componente != "" and componente != "LDR":
+    if componente == "":
+        componente = "LDR"
 
-        lista = sensor.SensorLista(con, componente)
-        return render_template(f"{componente}.html", sensor=lista)
-    
+    ExibeInformacao(con, f"Carregando página {componente}")
+
+    lista = sensor.SensorLista(con, componente)
+
+    medias = SensorRepositorio.SensorMediaDiaria(
+        con,
+        componente
+    )
+
+    unidades = {
+        "LDR": "%",
+        "MQ135": "V",
+        "BMP280": "hPa",
+        "DHT22": "°C",
+        "LDRTEMP": "°C"
+    }
+
+    if componente == "LDR":
+        pagina = f"index.html"
     else:
+        pagina = f"{componente}.html"
 
-        lista = sensor.SensorLista(con, "LDR")
-        return render_template("index.html", sensor=lista)
+    return render_template(
+        pagina,
+        lista=lista,
+        medias=medias,
+        unidade=unidades.get(componente, "")
+    )
 
 @app.route("/", methods=["GET"])
 def inicio():
@@ -44,18 +66,20 @@ def receber_sensor():
 
         ExibeInformacao(con,f"Pacote recebido com sucesso. SENSOR: {sensore}, HORA: {horadoregistro}, VALOR: {valorcoletado} - {dados}")
 
-        sensor.ConsumirDadosJson(con,sensore,horadoregistro,valorcoletado)
+        SensorRepositorio.ConsumirDadosJson(con,sensore,horadoregistro,valorcoletado)
+        ExibeInformacao(con, "Pacote salvo no banco de dados.")
 
         return jsonify({"mensagem": "Dados recebidos com sucesso!"})
 
     except Exception as ex:
 
-        ExibeErro(str(ex),con)
+        ExibeErro(ex,con,"Erro no EndPoint receber sensor")
         return jsonify({"mensagem": "Erro no envio"})
 
     finally:
 
-        ExibeInformacao("Encerrando rotina recebimento...")
+        ExibeInformacao(con,"Encerrando rotina recebimento...")
+
 
 # @app.route("/", methods=["GET", "POST"])
 # def inicio():
@@ -125,4 +149,4 @@ def receber_sensor():
 #     return redirect(url_for("inicio"))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

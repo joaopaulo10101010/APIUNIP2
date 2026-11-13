@@ -5,39 +5,36 @@ class Conexao:
     nomeDoBanco = "unipBD"
 
     QueryBanco = """
-    create table if not exists tb_sensores(
-        codigo int auto_increment not null,
-        nome varchar(30) not null,
-        tipo_valor varchar(30) not null,
-        primary key(codigo)
+    CREATE TABLE IF NOT EXISTS tb_sensores(
+        codigo INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome VARCHAR(30) NOT NULL,
+        tipo_valor VARCHAR(30) NOT NULL
     );
 
-    create table if not exists tb_pacotesRecebidos(
-        codigo int auto_increment not null,
-        data_hora_registro datetime not null,
-        sensor_codigo int not null,
-        valor double not null default 0,
-        primary key(codigo),
-        foreign key(sensor_codigo) references tb_sensores(codigo)
+    CREATE TABLE IF NOT EXISTS tb_pacotesRecebidos(
+        codigo INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_hora_registro DATETIME NOT NULL,
+        sensor_codigo INTEGER NOT NULL,
+        valor DOUBLE NOT NULL DEFAULT 0,
+        FOREIGN KEY(sensor_codigo) REFERENCES tb_sensores(codigo)
     );
 
-    create table if not exists tb_resultadosProcessados(
-        codigo int auto_increment not null,
-        pacoteRecebido_codigo int not null,
-        valor double not null default 0,
-        primary key(codigo),
-        foreign key(pacoteRecebido_codigo) references tb_pacotesRecebidos(codigo)
+    CREATE TABLE IF NOT EXISTS tb_resultadosProcessados(
+        codigo INTEGER PRIMARY KEY AUTOINCREMENT,
+        pacoteRecebido_codigo INTEGER NOT NULL,
+        valor DOUBLE NOT NULL DEFAULT 0,
+        FOREIGN KEY(pacoteRecebido_codigo) REFERENCES tb_pacotesRecebidos(codigo)
     );
 
-    create table if not exists tb_log(
-        codigo int auto_increment,
-        data_hora_log datetime default CURRENT_TIMESTAMP,
-        descricao varchar(500) default '',
-        tipo varchar(30) not null,
-        pacoteRecebido_codigo int,
-        primary key(codigo),
-        foreign key(pacoteRecebido_codigo) references tb_pacotesRecebidos(codigo)
-    );"""
+    CREATE TABLE IF NOT EXISTS tb_log(
+        codigo INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_hora_log DATETIME DEFAULT CURRENT_TIMESTAMP,
+        descricao VARCHAR(500) DEFAULT '',
+        tipo VARCHAR(30) NOT NULL,
+        pacoteRecebido_codigo INTEGER,
+        FOREIGN KEY(pacoteRecebido_codigo) REFERENCES tb_pacotesRecebidos(codigo)
+    );
+    """
 
     def __init__(self):
         self.iniciarBanco()
@@ -61,55 +58,70 @@ class Conexao:
         finally:
             conexao.close()
 
-    def Comando(self,comando:str,parametro = ()):
+    def Comando(self, comando: str, parametro=()):
+
+        con = None
 
         try:
-
             con = self.conectar()
 
             cursor = con.cursor()
 
             if parametro == ():
-                con.execute(comando)
+                cursor.execute(comando)
             else:
-                con.execute(comando,parametro)
+                cursor.execute(comando, parametro)
+
+            con.commit()
 
             return cursor.lastrowid
 
         finally:
-            con.close()
+            if con is not None:
+                con.close()
 
     def BuscaValor(self,campo: str,chave: str,tabela: str,valor,clasula:str = ""):
         
         try:
 
             con = self.conectar()
-
             query = f"{campo} AS CAMPO, {chave} AS CHAVE FROM {tabela} WHERE {chave} IN (?)"
 
             if clasula != "":
                 query += " " + clasula
 
-            retorno = con.execute(query).fetchone()
+            retorno = con.execute(query,chave).fetchone()
 
             if retorno is None:
                 return None
             
             return retorno ["CAMPO"]
 
-        except:
+        except Exception as ex:
 
             return None
 
         finally:
             con.close()
 
+    def BuscaTodos(self, comando: str, parametros=()):
+        conexao = self.conectar()
+
+        try:
+            cursor = conexao.execute(comando, parametros)
+            return cursor.fetchall()
+        finally:
+            conexao.close()
+
     def IniciarTransacao(self):
-        self.conexao.start_transaction()
+        self.conexao = self.conectar()
+        self.conexao.execute("BEGIN")
 
     def CommitTransacao(self):
         self.conexao.commit()
 
     def VoltarTransacao(self):
         self.conexao.rollback()
+
+    
     

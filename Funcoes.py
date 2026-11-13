@@ -10,7 +10,7 @@ def ExibeErro(ex:Exception,con:Conexao,texto="",codigoLog:int = 0):
     else:
         msg = f"{texto} | Exception: {str(ex)}" 
 
-    ExibeMsg("ERRO",f"{texto}")
+    ExibeMsg("ERRO",f"{msg}")
 
     GravarLogBanco(con,"ERRO",msg)
 
